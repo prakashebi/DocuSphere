@@ -1,4 +1,4 @@
-# DocuSphere - Search-Driven Document Management Platform
+# Orqestra - An event-driven collaboration and workflow platform
 
 An actively developed metadata-rich document management system designed for research and enterprise use cases.
 
