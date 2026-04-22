@@ -47,7 +47,7 @@ Orqestra addresses these gaps by introducing:
 - Search Engine: OpenSearch
 - Event Layer: (Planned – async/event-driven pattern)
 - Storage: AWS S3 (planned)
-- Deployment: AWS EC2 (current), containerisation planned
+- Deployment: containerisation (current), AWS EC2 planned
 
 ### High-Level Flow
 ```
