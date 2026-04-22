@@ -4,6 +4,7 @@ An actively developed metadata-rich document management system designed for rese
 
 This platform focuses on structured metadata, advanced search capabilities, and auditability of document access and modifications.
 
+
 ## 🚀 Current Status
 
 ⚠️ Work in Progress (early prototype)
@@ -17,7 +18,6 @@ This platform focuses on structured metadata, advanced search capabilities, and 
 - Event logging (foundation for audit + activity streams)
 - Role-based access control (RBAC)
 
----
 
 ## 🧠 Problem Statement
 
@@ -37,7 +37,7 @@ Orqestra addresses these gaps by introducing:
 - Search-first design with OpenSearch
 - Auditability and traceability by design
 
----
+
 ## 🏗️ Architecture Overview
 ### Core Components
 - Backend: FastAPI (Python)
@@ -61,7 +61,6 @@ Orqestra addresses these gaps by introducing:
 (Optional Storage - S3)
 ```
 
----
 ## 🔑 Core Features
 - User authentication (JWT-based)
 - Role-based access control (RBAC)
@@ -73,7 +72,7 @@ Orqestra addresses these gaps by introducing:
 - Versioning of entities (history tracking)
 - RESTful API design with OpenAPI documentation
 
----
+
 ## 🧩 Design Principles
 - Event-driven first → every action is an event
 - Extensibility → not limited to “tasks”
@@ -82,7 +81,6 @@ Orqestra addresses these gaps by introducing:
 - Scalability → loosely coupled components
 - Cloud-ready → AWS-native deployment path
 
----
 
 ## 📦 Project Structure
 
@@ -115,7 +113,6 @@ repo-root/
 └── README.md
 ```
 
----
 
 ## ⚙️ Getting Started (Backend)
 
@@ -131,7 +128,6 @@ uvicorn app.main:app --reload
 API docs available at:
 http://localhost:8000/docs
 
----
 
 ## 🛣️ Roadmap
 ### Short-term
@@ -153,7 +149,6 @@ http://localhost:8000/docs
 - Semantic search and recommendations
 - Workflow automation / orchestration engine
 
----
 ## 📌 Notes
 
 This project is being developed iteratively with a focus on:
@@ -163,7 +158,6 @@ This project is being developed iteratively with a focus on:
 - scalability and extensibility
 - alignment with research and platform engineering use cases (e.g. CERN / EMBL)
 
----
 ## 👤 Author
 
 Prakash Gaur
