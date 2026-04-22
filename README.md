@@ -1,8 +1,8 @@
 # Orqestra - An event-driven collaboration and workflow platform
 
-An actively developed metadata-rich document management system designed for research and enterprise use cases.
+Orqestra is an actively developed platform for orchestrating workflows, entities, and collaboration in real time. It is designed with an event-driven architecture to support scalable, distributed systems across research and enterprise environments.
 
-This platform focuses on structured metadata, advanced search capabilities, and auditability of document access and modifications.
+The platform focuses on structured data, real-time updates, searchability, and full auditability of system activity.
 
 
 ## 🚀 Current Status
