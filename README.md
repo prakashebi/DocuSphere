@@ -5,10 +5,6 @@ An actively developed metadata-rich document management system designed for rese
 This platform focuses on structured metadata, advanced search capabilities, and auditability of document access and modifications.
 
 ---
-
-
----
-
 ## 🚀 Current Status
 
 ⚠️ Work in Progress (early prototype)
