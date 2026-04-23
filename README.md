@@ -9,21 +9,21 @@ The platform focuses on structured data, real-time updates, searchability, and f
 
 ⚠️ Work in Progress (early prototype)
 
-- Project setup (FastAPI + React)
-- Initial authentication scaffold
-- Deployed basic frontend on AWS EC2
-- Core entity management (tasks/work items – evolving to generic entities)
-- Metadata schema (extensible)
-- OpenSearch integration (early)
-- Event logging (foundation for audit + activity streams)
+- Project setup (Flask + React)
+- Authentication (JWT-based)
+- Core entity management (workspaces, boards, columns, cards)
+- Extensible metadata schema (JSONB)
 - Role-based access control (RBAC)
+- Event / audit logging (foundation for activity streams)
+- Trello-like board UI with drag-and-drop
+- OpenSearch integration (early / planned)
 
 
 ## 🧠 Problem Statement
 
 Modern collaboration and workflow systems often suffer from:
 
-- Limited extensibility beyond simple “tasks”
+- Limited extensibility beyond simple "tasks"
 - Poor visibility into system activity and history
 - Weak search across entities and interactions
 - Lack of real-time collaboration capabilities
@@ -33,26 +33,27 @@ Orqestra addresses these gaps by introducing:
 
 - An event-driven architecture
 - Extensible entity models (not limited to tasks)
-- Real-time updates and activity streams
+- Real-time updates and activity streams (planned)
 - Search-first design with OpenSearch
 - Auditability and traceability by design
 
 
 ## 🏗️ Architecture Overview
+
 ### Core Components
-- Backend: FastAPI (Python)
-- Frontend: React
-- Database: PostgreSQL
-- Search Engine: OpenSearch
-- Event Layer: (Planned – async/event-driven pattern)
-- Storage: AWS S3 (planned)
-- Deployment: containerisation (current), AWS EC2 planned
+- **Backend:** Flask (Python)
+- **Frontend:** React + TypeScript + Vite
+- **Database:** PostgreSQL
+- **Search Engine:** OpenSearch (planned)
+- **Event Layer:** Planned – async/event-driven pattern
+- **Storage:** AWS S3 (planned)
+- **Deployment:** Docker Compose (local), AWS EC2 (planned)
 
 ### High-Level Flow
 ```
 (Client - React)
         ↓
-(FastAPI Backend / API Layer)
+(Flask Backend / API Layer)
         ↓
 (Event Layer - Planned)
    ↓              ↓
@@ -63,19 +64,18 @@ Orqestra addresses these gaps by introducing:
 
 ## 🔑 Core Features
 - User authentication (JWT-based)
-- Role-based access control (RBAC)
-- Generic entity management (tasks, workflows, future extensions)
-- Real-time updates (WebSocket / event-driven – planned)
-- Event logging and activity streams
-- Full-text and faceted search (OpenSearch)
-- Audit logging (system-wide traceability)
-- Versioning of entities (history tracking)
-- RESTful API design with OpenAPI documentation
+- Role-based access control (RBAC – admin / member / viewer)
+- Generic entity management (workspaces, boards, columns, cards)
+- Trello-like board UI with drag-and-drop cards
+- Event logging and audit streams
+- Full-text and faceted search (OpenSearch – planned)
+- Versioning of entities (planned)
+- RESTful API design
 
 
 ## 🧩 Design Principles
 - Event-driven first → every action is an event
-- Extensibility → not limited to “tasks”
+- Extensibility → not limited to "tasks"
 - Search-centric → OpenSearch as a core component
 - Auditability → trace everything
 - Scalability → loosely coupled components
@@ -89,58 +89,152 @@ repo-root/
 │
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
+│   │   ├── main.py               # Flask app factory
+│   │   ├── extensions.py         # db, jwt, cors
 │   │   ├── api/
-│   │   │   └── routes.py
+│   │   │   ├── deps.py           # auth decorators
+│   │   │   ├── routes.py         # blueprint registration
+│   │   │   └── v1/
+│   │   │       ├── auth.py
+│   │   │       ├── users.py
+│   │   │       ├── entities.py
+│   │   │       └── events.py
 │   │   ├── core/
-│   │   │   └── config.py
-│   │   ├── models/
-│   │   │   └── base.py
-│   │   ├── schemas/
-│   │   │   └── user.py
-│   │
+│   │   │   ├── config.py         # pydantic-settings
+│   │   │   └── security.py       # password hashing
+│   │   ├── models/               # SQLAlchemy models
+│   │   └── schemas/              # Pydantic schemas
+│   ├── server.py                 # entrypoint
 │   ├── requirements.txt
+│   ├── Dockerfile
+│   └── .env.example
 │
 ├── frontend/
-│   └── README.md
-│
-├── infra/
-│   └── docker-compose.yml
+│   ├── src/
+│   │   ├── api/                  # axios client + endpoints
+│   │   ├── store/                # Zustand state (auth, board)
+│   │   ├── types/                # TypeScript types
+│   │   ├── components/           # ui/, layout/, board/
+│   │   └── pages/                # Login, Register, Workspaces, Board
+│   ├── package.json
+│   └── .env.example
 │
 ├── docs/
 │   └── architecture.md
 │
+├── docker-compose.yml
+├── .gitignore
 └── README.md
 ```
 
 
-## ⚙️ Getting Started (Backend)
+## 🐳 Running with Docker Compose (recommended)
+
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose installed
+
+### 1. Clone the repo
+
+```bash
+git clone <repo-url>
+cd Orqestra
+```
+
+### 2. Configure environment
+
+Copy the backend env example and set a secret key:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env` and set a strong `SECRET_KEY`:
 
 ```
+SECRET_KEY=your-random-secret-here
+```
+
+Generate one with:
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+### 3. Build and start all services
+
+```bash
+docker compose up --build
+```
+
+This starts three services:
+
+| Service | URL | Description |
+|---|---|---|
+| `frontend` | http://localhost:3000 | React UI |
+| `backend` | http://localhost:8000 | Flask API |
+| `db` | localhost:5432 | PostgreSQL |
+
+### 4. Stop services
+
+```bash
+docker compose down
+```
+
+To also remove the database volume:
+
+```bash
+docker compose down -v
+```
+
+### Rebuilding after code changes
+
+```bash
+docker compose up --build
+```
+
+The backend volume mounts `./backend` into the container so Python changes are reflected without a full rebuild. The frontend runs `npm install && npm run dev` on start, so dependency changes require a restart (`docker compose restart frontend`).
+
+
+## ⚙️ Running locally (without Docker)
+
+### Backend
+
+```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-uvicorn app.main:app --reload
+cp .env.example .env           # then set DATABASE_URL and SECRET_KEY
+
+python server.py
 ```
 
-API docs available at:
-http://localhost:8000/docs
+Requires a running PostgreSQL instance. Update `DATABASE_URL` in `.env` accordingly.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:3000. The Vite dev server proxies all `/api` requests to `http://localhost:8000`.
 
 
 ## 🛣️ Roadmap
+
 ### Short-term
-- Core entity APIs (CRUD + relationships)
-- Metadata schema design (extensible)
-- PostgreSQL integration
-- Basic event logging
+- Dockerfile for frontend (production build with Nginx)
+- User assignment to cards and boards
+- Board search and filtering UI
 
 ### Mid-term
 - OpenSearch indexing + search APIs
 - Activity stream (event-driven)
 - Entity versioning system
-- Audit logging
+- Audit log viewer in UI
 
 ### Long-term
 - Real-time collaboration (WebSockets)
@@ -149,16 +243,17 @@ http://localhost:8000/docs
 - Semantic search and recommendations
 - Workflow automation / orchestration engine
 
+
 ## 📌 Notes
 
 This project is being developed iteratively with a focus on:
 
-- clean, modular architecture
-- event-driven system design
-- scalability and extensibility
-- alignment with research and platform engineering use cases (e.g. CERN / EMBL)
+- Clean, modular architecture
+- Event-driven system design
+- Scalability and extensibility
+- Alignment with research and platform engineering use cases
+
 
 ## 👤 Author
 
 Prakash Gaur
-
