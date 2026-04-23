@@ -1,39 +1,39 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from flask import Blueprint, jsonify, request
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_role
-from app.db.session import get_db
+from app.api.deps import roles_required
+from app.extensions import db
 from app.models.event import AuditEvent
-from app.models.user import User, UserRole
-from app.schemas.event import AuditEventListResponse
+from app.models.user import UserRole
+from app.schemas.event import AuditEventListResponse, AuditEventRead
 
-router = APIRouter(prefix="/events", tags=["events"])
+bp = Blueprint("events", __name__, url_prefix="/api/v1/events")
 
 
-@router.get(
-    "",
-    response_model=AuditEventListResponse,
-    dependencies=[Depends(require_role(UserRole.admin, UserRole.member))],
-)
-async def list_events(
-    event_type: str | None = Query(None),
-    entity_id: uuid.UUID | None = Query(None),
-    actor_id: uuid.UUID | None = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=200),
-    db: AsyncSession = Depends(get_db),
-):
+@bp.get("")
+@roles_required(UserRole.admin, UserRole.member)
+def list_events():
+    event_type = request.args.get("event_type")
+    entity_id = request.args.get("entity_id")
+    actor_id = request.args.get("actor_id")
+    skip = int(request.args.get("skip", 0))
+    limit = min(int(request.args.get("limit", 50)), 200)
+
     stmt = select(AuditEvent).order_by(AuditEvent.created_at.desc())
     if event_type:
         stmt = stmt.where(AuditEvent.event_type == event_type)
     if entity_id:
-        stmt = stmt.where(AuditEvent.entity_id == entity_id)
+        stmt = stmt.where(AuditEvent.entity_id == uuid.UUID(entity_id))
     if actor_id:
-        stmt = stmt.where(AuditEvent.actor_id == actor_id)
+        stmt = stmt.where(AuditEvent.actor_id == uuid.UUID(actor_id))
 
-    total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
-    rows = (await db.scalars(stmt.offset(skip).limit(limit))).all()
-    return AuditEventListResponse(total=total or 0, items=list(rows))
+    total = db.session.scalar(select(func.count()).select_from(stmt.subquery()))
+    rows = db.session.scalars(stmt.offset(skip).limit(limit)).all()
+
+    result = AuditEventListResponse(
+        total=total or 0,
+        items=[AuditEventRead.model_validate(r) for r in rows],
+    )
+    return jsonify(result.model_dump(mode="json"))

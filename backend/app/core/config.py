@@ -15,8 +15,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
-    # Database
-    database_url: str = "postgresql+asyncpg://orqestra:orqestra@localhost:5432/orqestra"
+    # Database (sync — psycopg2)
+    database_url: str = "postgresql+psycopg2://orqestra:orqestra@localhost:5432/orqestra"
 
     # OpenSearch
     opensearch_host: str = "localhost"

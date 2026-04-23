@@ -1,11 +1,18 @@
 # Frontend (React)
 
-React-based UI for the Document Management Platform.
+React-based UI for the Orqestra - An event-driven collaboration and workflow platform
 
-Planned features:
+User interface for the following:
 - Authentication (login/register)
-- Document upload interface
+- Creating workspaces
+- Creating boards within workspaces
+- Assiging users to workspaces and boards
+- ability to add columns into the board
+- ability to add card into the columns
+  - with title, body, comments and file upload 
+- ability to move cards in different columns
+- ability to edit cards
+- to assign users to these cards
 - Search and filtering UI
-- Document viewer
 
 To be completed.

@@ -1,45 +1,40 @@
-from contextlib import asynccontextmanager
+from datetime import timedelta
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from flask import Flask, jsonify
+from werkzeug.exceptions import HTTPException
 
-from app.api.routes import api_router
 from app.core.config import get_settings
-from app.db.session import engine
-from app.models.base import Base
-
-settings = get_settings()
+from app.extensions import cors, db, jwt
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Create tables on startup (use Alembic migrations in production)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    await engine.dispose()
+def create_app() -> Flask:
+    settings = get_settings()
 
+    app = Flask(__name__)
 
-app = FastAPI(
-    title=settings.app_name,
-    version=settings.app_version,
-    description="Event-driven collaboration and workflow platform",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan,
-)
+    app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["JWT_SECRET_KEY"] = settings.secret_key
+    app.config["JWT_ALGORITHM"] = settings.algorithm
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=settings.access_token_expire_minutes)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    db.init_app(app)
+    jwt.init_app(app)
+    cors.init_app(app, origins=settings.cors_origins, supports_credentials=True)
 
-app.include_router(api_router)
+    from app.api.routes import register_blueprints
+    register_blueprints(app)
 
+    @app.get("/health")
+    def health():
+        return jsonify(status="ok", app=settings.app_name, version=settings.app_version)
 
-@app.get("/health", tags=["health"])
-async def health():
-    return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
+    # Return JSON for all HTTP errors instead of Flask's default HTML
+    @app.errorhandler(HTTPException)
+    def handle_http_error(e: HTTPException):
+        return jsonify(detail=e.description), e.code
+
+    with app.app_context():
+        db.create_all()
+
+    return app

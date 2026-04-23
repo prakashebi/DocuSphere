@@ -1,35 +1,30 @@
 import uuid
+from functools import wraps
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from flask import jsonify
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 
-from app.core.security import decode_access_token
-from app.db.session import get_db
+from app.extensions import db
 from app.models.user import User, UserRole
 
-bearer = HTTPBearer()
+
+def get_current_user() -> User:
+    """Resolve the JWT identity to a User row. Call inside a @jwt_required() route."""
+    user_id = get_jwt_identity()
+    return db.session.get(User, uuid.UUID(user_id))
 
 
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer),
-    db: AsyncSession = Depends(get_db),
-) -> User:
-    subject = decode_access_token(credentials.credentials)
-    if subject is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    user = await db.scalar(select(User).where(User.id == uuid.UUID(subject)))
-    if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    return user
-
-
-def require_role(*roles: UserRole):
-    async def _check(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-        return current_user
-
-    return _check
+def roles_required(*roles: UserRole):
+    """Decorator that enforces JWT auth + role membership."""
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            verify_jwt_in_request()
+            user = get_current_user()
+            if not user or not user.is_active:
+                return jsonify(detail="User not found"), 401
+            if user.role not in roles:
+                return jsonify(detail="Insufficient permissions"), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator

@@ -1,39 +1,50 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token
+from pydantic import ValidationError
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, hash_password, verify_password
-from app.db.session import get_db
+from app.core.security import hash_password, verify_password
+from app.extensions import db
 from app.models.user import User
-from app.schemas.user import LoginRequest, TokenResponse, UserCreate, UserRead
+from app.schemas.user import LoginRequest, UserCreate, UserRead
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
-    existing = await db.scalar(select(User).where(User.email == payload.email))
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+@bp.post("/register")
+def register():
+    try:
+        payload = UserCreate.model_validate(request.get_json())
+    except ValidationError as e:
+        return jsonify(detail=e.errors()), 422
+
+    if db.session.scalar(select(User).where(User.email == payload.email)):
+        return jsonify(detail="Email already registered"), 400
 
     user = User(
         email=payload.email,
         username=payload.username,
         hashed_password=hash_password(payload.password),
     )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    return user
+    db.session.add(user)
+    db.session.commit()
+    db.session.refresh(user)
+
+    return jsonify(UserRead.model_validate(user).model_dump(mode="json")), 201
 
 
-@router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
-    user = await db.scalar(select(User).where(User.email == payload.email))
+@bp.post("/login")
+def login():
+    try:
+        payload = LoginRequest.model_validate(request.get_json())
+    except ValidationError as e:
+        return jsonify(detail=e.errors()), 422
+
+    user = db.session.scalar(select(User).where(User.email == payload.email))
     if not user or not verify_password(payload.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        return jsonify(detail="Invalid credentials"), 401
     if not user.is_active:
-        raise HTTPException(status_code=403, detail="Account is disabled")
+        return jsonify(detail="Account is disabled"), 403
 
-    token = create_access_token(str(user.id))
-    return TokenResponse(access_token=token)
+    token = create_access_token(identity=str(user.id))
+    return jsonify(access_token=token, token_type="bearer")
