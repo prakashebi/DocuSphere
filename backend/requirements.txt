@@ -1,10 +1,11 @@
-fastapi>=0.111.0
-uvicorn[standard]>=0.29.0
-python-multipart>=0.0.9
+flask>=3.0.0
+flask-cors>=4.0.0
+flask-jwt-extended>=4.6.0
+flask-sqlalchemy>=3.1.0
 
-# Database
-sqlalchemy[asyncio]>=2.0.0
-asyncpg>=0.29.0
+# Database (sync)
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
 alembic>=1.13.0
 
 # Settings & validation
@@ -13,10 +14,9 @@ pydantic-settings>=2.0.0
 pydantic[email]>=2.0.0
 
 # Auth
-python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 
-# OpenSearch
+# Search
 opensearch-py>=2.4.0
 
 # Environment

@@ -1,39 +1,51 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import jwt_required
+from pydantic import ValidationError
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, require_role
-from app.db.session import get_db
+from app.api.deps import get_current_user, roles_required
+from app.extensions import db
 from app.models.user import User, UserRole
 from app.schemas.user import UserRead, UserUpdate
 
-router = APIRouter(prefix="/users", tags=["users"])
+bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
 
 
-@router.get("/me", response_model=UserRead)
-async def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
-
-
-@router.get("/{user_id}", response_model=UserRead, dependencies=[Depends(require_role(UserRole.admin))])
-async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    user = await db.scalar(select(User).where(User.id == user_id))
+@bp.get("/me")
+@jwt_required()
+def get_me():
+    user = get_current_user()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+        return jsonify(detail="User not found"), 401
+    return jsonify(UserRead.model_validate(user).model_dump(mode="json"))
 
 
-@router.patch("/{user_id}", response_model=UserRead, dependencies=[Depends(require_role(UserRole.admin))])
-async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession = Depends(get_db)):
-    user = await db.scalar(select(User).where(User.id == user_id))
+@bp.get("/<user_id>")
+@roles_required(UserRole.admin)
+def get_user(user_id: str):
+    user = db.session.get(User, uuid.UUID(user_id))
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        return jsonify(detail="User not found"), 404
+    return jsonify(UserRead.model_validate(user).model_dump(mode="json"))
+
+
+@bp.patch("/<user_id>")
+@roles_required(UserRole.admin)
+def update_user(user_id: str):
+    try:
+        payload = UserUpdate.model_validate(request.get_json())
+    except ValidationError as e:
+        return jsonify(detail=e.errors()), 422
+
+    user = db.session.get(User, uuid.UUID(user_id))
+    if not user:
+        return jsonify(detail="User not found"), 404
 
     for field, value in payload.model_dump(exclude_none=True).items():
         setattr(user, field, value)
 
-    await db.commit()
-    await db.refresh(user)
-    return user
+    db.session.commit()
+    db.session.refresh(user)
+    return jsonify(UserRead.model_validate(user).model_dump(mode="json"))

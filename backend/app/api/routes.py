@@ -1,10 +1,10 @@
-from fastapi import APIRouter
+from flask import Flask
 
 from app.api.v1 import auth, entities, events, users
 
-api_router = APIRouter(prefix="/api/v1")
 
-api_router.include_router(auth.router)
-api_router.include_router(users.router)
-api_router.include_router(entities.router)
-api_router.include_router(events.router)
+def register_blueprints(app: Flask) -> None:
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(users.bp)
+    app.register_blueprint(entities.bp)
+    app.register_blueprint(events.bp)

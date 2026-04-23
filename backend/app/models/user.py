@@ -3,7 +3,8 @@ import enum
 from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin, UUIDMixin
+from app.extensions import db
+from app.models.base import TimestampMixin, UUIDMixin
 
 
 class UserRole(str, enum.Enum):
@@ -12,7 +13,7 @@ class UserRole(str, enum.Enum):
     viewer = "viewer"
 
 
-class User(UUIDMixin, TimestampMixin, Base):
+class User(UUIDMixin, TimestampMixin, db.Model):
     __tablename__ = "users"
 
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)

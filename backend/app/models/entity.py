@@ -1,11 +1,12 @@
 import enum
 import uuid
 
-from sqlalchemy import Enum, ForeignKey, String, Text
+from sqlalchemy import Boolean, Enum, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin, UUIDMixin
+from app.extensions import db
+from app.models.base import TimestampMixin, UUIDMixin
 
 
 class EntityStatus(str, enum.Enum):
@@ -15,7 +16,7 @@ class EntityStatus(str, enum.Enum):
     archived = "archived"
 
 
-class Entity(UUIDMixin, TimestampMixin, Base):
+class Entity(UUIDMixin, TimestampMixin, db.Model):
     """Generic extensible entity — can represent tasks, workflows, experiments, etc."""
 
     __tablename__ = "entities"
@@ -29,7 +30,6 @@ class Entity(UUIDMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    # Extensible metadata — arbitrary key/value pairs per entity type
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=True, default=dict)
     owner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -37,5 +37,4 @@ class Entity(UUIDMixin, TimestampMixin, Base):
         nullable=True,
         index=True,
     )
-    # Soft-delete support for auditability
-    is_deleted: Mapped[bool] = mapped_column(default=False, nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
