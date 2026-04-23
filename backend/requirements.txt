@@ -14,7 +14,7 @@ pydantic-settings>=2.0.0
 pydantic[email]>=2.0.0
 
 # Auth
-passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0
 
 # Search
 opensearch-py>=2.4.0

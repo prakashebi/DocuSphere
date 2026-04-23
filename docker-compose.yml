@@ -12,6 +12,11 @@ services:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orqestra -d orqestra"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
     build: ./backend
@@ -23,7 +28,8 @@ services:
       SECRET_KEY: change-me-in-production
       DEBUG: "false"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - ./backend:/app
 
@@ -35,7 +41,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      VITE_API_URL: http://backend:8000/api/v1
+      API_TARGET: http://backend:8000
     volumes:
       - ./frontend:/app
     depends_on:

@@ -34,6 +34,12 @@ def create_app() -> Flask:
     def handle_http_error(e: HTTPException):
         return jsonify(detail=e.description), e.code
 
+    # Catch unhandled exceptions and return JSON so errors are visible in the client
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(e: Exception):
+        app.logger.exception("Unhandled exception: %s", e)
+        return jsonify(detail=str(e)), 500
+
     with app.app_context():
         db.create_all()
 

@@ -174,7 +174,33 @@ This starts three services:
 | `backend` | http://localhost:8000 | Flask API |
 | `db` | localhost:5432 | PostgreSQL |
 
-### 4. Stop services
+### 4. Register and log in
+
+Open **http://localhost:3000** in your browser. You will be redirected to the login page.
+
+![Login page](docs/screenshots/login.png)
+
+Click **Sign up** to create your account, then log in. No pre-seeded users exist — the first account you register is yours.
+
+### 5. Create a workspace
+
+After logging in you land on the Workspaces page. Click **+ New workspace**, give it a name, and hit **Create**.
+
+![Workspaces](docs/screenshots/workspaces.png)
+
+### 6. Create a board
+
+Click into a workspace and create your first board with **+ New board**.
+
+![Boards](docs/screenshots/boards.png)
+
+### 7. Add columns and cards
+
+Open a board to get the Trello-like view. Use **+ Add another list** to create columns, then **+ Add a card** inside each column. Cards can be dragged between columns, edited, and commented on.
+
+![Board view](docs/screenshots/board.png)
+
+### 8. Stop services
 
 ```bash
 docker compose down
